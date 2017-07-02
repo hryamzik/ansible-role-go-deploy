@@ -4,11 +4,13 @@ This role is designed to build and deploy go binaries.
 
 ## Dependencies
 
+```yml
 go_build_required_packages:
   - github.com/elazarl/go-bindata-assetfs/...
   - github.com/jteeuwen/go-bindata/...
   - github.com/GeertJohan/go.rice
   - github.com/GeertJohan/go.rice/rice
+```
 
 ## Subprojects
 
