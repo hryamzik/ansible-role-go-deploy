@@ -22,7 +22,7 @@ If repository has multiple project directories inside they can be defined with `
 
 ## Supported architectures
 
-Checkout [vars](/hryamzik/ansible-role-go-deploy/vars/main.yml), more could be added.
+Checkout [vars](vars/main.yml), more could be added.
 
 ## Limitations
 
