@@ -1,0 +1,70 @@
+- block:
+  
+    - name: show target arch and os
+      debug: msg="{{ go_build_goos }} {{ go_build_goarch }} {{ go_build_goarm }}"
+    
+    - name: ensure {{ go_deploy_go_path }}/src exists
+      file: dest="{{ go_deploy_go_path }}/src" state=directory
+    
+    - name: install or update some go packages
+      shell: "go get -u {{ item }}"
+      with_items: "{{ go_build_required_packages }}"
+      changed_when: no
+    
+    - name: get sources
+      git: repo=https://{{ go_build_repo }} dest={{ go_deploy_go_path }}/src/{{ go_build_repo }} version={{ go_deploy_git_repo_version }}
+      ignore_errors: "{{ go_deploy_ignore_git_errors }}"
+      register: git_pull
+    
+    # - name: fail if git pull was unsuccessful not because of local changes
+    #   fail: msg="git pull failed{{ ':' }} {{ git_pull.msg }}"
+    #   when: "git_pull|failed and 'Local modifications exist in repository' not in git_pull.msg"
+    
+    - name: go generate
+      shell: go generate {{ item }}
+      with_items: "{{ go_build_go_generate_packages }}"
+      changed_when: no
+    
+    - name: install required go dependencies and generate code
+      shell: cd {{ go_deploy_go_path }}/src/{{ go_build_repo }}/{{ item[0] }} && {{ item[1] }}
+      with_nested:
+          - "{{ go_build_subprojects }}"
+          - ['go generate', 'go get -u']
+      register: go_get
+      changed_when: go_get.stdout_lines|length > 0
+    
+    - name: ensure build dir is presented
+      file: dest={{ go_deploy_go_path }}/bin/{{ go_build_goos }}_{{ go_build_goarch }} state=directory
+    
+    - name: go build
+      shell: go build -o {{ go_deploy_go_path }}/bin/{{ go_build_goos }}_{{ go_build_goarch }}{{ "_" + go_build_goarm if go_build_goarm != "" else "" }}/{{ (go_build_repo + '/' +  item)|regex_replace('/$','')|basename }} {{ go_build_repo }}/{{ item }}
+      environment:
+          GOOS: "{{ go_build_goos }}"
+          GOARCH: "{{ go_build_goarch }}"
+          GOARM: "{{ go_build_goarm }}"
+      changed_when: false
+      with_items: "{{ go_build_subprojects }}"
+      
+  run_once: true
+  become: no
+  connection: local
+  tags: build
+  environment:
+      GOPATH: "{{ go_deploy_go_path }}"
+  when: go_deploy_build
+  
+- block:
+    
+    - name: ensure deploy path is presented
+      file: dest="{{ go_build_deploy_path }}" state=directory
+    
+    - name: deploy binaries
+      copy: src={{ go_deploy_go_path }}/bin/{{ go_build_goos }}_{{ go_build_goarch }}{{ "_" + go_build_goarm if go_build_goarm != "" else "" }}/{{ (go_build_repo + '/' +  item)|regex_replace('/$','')|basename }} dest={{ go_build_deploy_path }}/{{ (go_build_repo + '/' +  item)|regex_replace('/$','')|basename }} mode=755 owner={{ go_deploy_binary_owner }}
+      with_items: "{{ go_build_subprojects }}"
+      notify: "{{ go_deploy_notify }}"
+
+
+  tags: upload
+  environment:
+      GOPATH: "{{ go_deploy_go_path }}"
+  when: go_deploy_upload
