@@ -12,6 +12,7 @@ go_deploy_build: yes
 go_deploy_upload: yes
 go_deploy_git_repo_version: master
 go_deploy_ignore_git_errors: no
+go_deploy_ignore_goget_errors: no
 go_deploy_go_path: "{{ lookup('env', 'GO_DEPLOY_GOPATH') if lookup('env', 'GO_DEPLOY_GOPATH') != '' else lookup('env', 'GOPATH') }}"
 go_deploy_binary_owner: root
 go_deploy_notify: []

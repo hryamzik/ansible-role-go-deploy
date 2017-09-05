@@ -31,6 +31,7 @@
           - "{{ go_build_subprojects }}"
           - ['go generate', 'go get -u']
       register: go_get
+      ignore_errors: "{{ go_deploy_ignore_goget_errors }}"
       changed_when: go_get.stdout_lines|length > 0
     
     - name: ensure build dir is presented
