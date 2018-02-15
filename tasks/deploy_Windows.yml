@@ -1,0 +1,20 @@
+- block:
+    
+    - name: ensure deploy path is presented
+      win_file: path="{{ go_build_deploy_path }}" state=directory
+    
+    - name: add deploy path to PATH
+      win_path:
+          elements:
+              - "{{ go_build_deploy_path }}"
+    
+    - name: deploy binaries
+      win_copy: src={{ go_deploy_go_path }}/bin/{{ go_build_goos }}_{{ go_build_goarch }}{{ "_" + go_build_goarm if go_build_goarm != "" else "" }}/{{ (go_build_repo + '/' +  item)|regex_replace('/$','')|basename }}{{ go_deploy_bin_extention }}
+                dest={{ go_build_deploy_path }}/{{ (go_build_repo + '/' +  item)|regex_replace('/$','')|basename }}{{ go_deploy_bin_extention }}
+                mode=755 owner={{ go_deploy_binary_owner }}
+      with_items: "{{ go_build_subprojects }}"
+      notify: "{{ go_deploy_notify }}"
+
+  tags: upload
+  environment:
+      GOPATH: "{{ go_deploy_go_path }}"

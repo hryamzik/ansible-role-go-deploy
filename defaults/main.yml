@@ -3,11 +3,14 @@ go_build_go_generate_packages: []
 go_build_required_packages: []
 go_build_repo: github.com/hryamzik/urlgo
 
-go_build_goos: "{{ ansible_system|lower }}"
+go_build_goos: "{{ ansible_system|lower if ansible_os_family != 'Windows' else ansible_os_family|lower }}"
 go_build_goarch: "{{ go_ansible_arch_mappings[ansible_architecture] }}"
-go_build_goarm: "{{ go_ansible_goarm_mappings[ansible_architecture] }}"
+go_build_goarm: "{{ go_ansible_goarm_mappings[ansible_architecture] if go_ansible_goarm_mappings == 'arm' else '' }}"
 
-go_build_deploy_path: /usr/local/bin/
+go_build_deploy_path_nix: '/usr/local/bin/'
+go_build_deploy_path_win: "%SystemDrive%\\opt\\bin"
+go_build_deploy_path: "{{ go_build_deploy_path_nix if ansible_os_family != 'Windows' else go_build_deploy_path_win }}"
+go_deploy_bin_extention: "{{ '.exe' if ansible_os_family == 'Windows' else '' }}"
 go_deploy_build: yes
 go_deploy_upload: yes
 go_deploy_git_repo_version: master
